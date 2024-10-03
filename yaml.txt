@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3  # количество подов для обработки нагрузки
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      affinity:  # настройка размещения подов на разных нодах
+        antiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - my-app
+            topologyKey: "kubernetes.io/hostname"  # размещение на разных нодах
+      containers:
+      - name: my-app-container
+        image: my-app-image:latest  #  образ приложения
+        resources:
+          requests:
+            cpu: "100m"  # миинимальное потребление ресурсов CPU
+            memory: "128Mi"  # запрашиваемое количество памяти
+          limits:
+            cpu: "1"  # лимит на ресурсы CPU для предотвращения чрезмерного использования
+            memory: "256Mi"  # лимит на память
+        startupProbe:  # проверка готовности до обработки запросов
+          httpGet:
+            path: /healthz  # путь для проверки состояния приложения
+            port: 8080  # порт, на котором приложение отвечает
+          initialDelaySeconds: 10  # задержка перед первой проверкой
+          periodSeconds: 5  # интервал между проверками
+          failureThreshold: 3  # число неудачных проверок перед тем, как считать под недоступным
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80  # порт, по которому будет доступно приложение
+      targetPort: 8080  # порт контейнера, обрабатывающего запросы
+  type: ClusterIP  # тип сервиса, используется для внутреннего доступа в кластере
+
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: my-app-pdb
+spec:
+  minAvailable: 2  # минимальное количество доступных подов для обеспечения отказоустойчивости
+  selector:
+    matchLabels:
+      app: my-app
