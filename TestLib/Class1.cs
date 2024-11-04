@@ -25,7 +25,7 @@ namespace TestLib
 
     public class Triangle : IShape
     {
-        private readonly double sideA, sideB, sideC;
+        private readonly double[3] sides;
 
         public Triangle(double a, double b, double c)
         {
@@ -34,24 +34,23 @@ namespace TestLib
             if (a + b <= c || a + c <= b || b + c <= a)
                 throw new ArgumentException("Невозможные стороны треугольника");
 
-            sideA = a;
-            sideB = b;
-            sideC = c;
+            sides[0] = a;
+            sides[1] = b;
+            sides[2] = c;
+			Array.Sort(sides);
         }
 
         public double Area
         {
             get
             {
-                double s = (sideA + sideB + sideC) / 2;
-                return Math.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+                double s = (sides[0] + sides[1] + sides[2]) / 2;
+                return Math.Sqrt(s * (s - sides[0]) * (s - sides[1]) * (s - sides[2]));
             }
         }
 
         public bool IsRightTriangle()
         {
-            double[] sides = new[] { sideA, sideB, sideC };
-            Array.Sort(sides);
             return Math.Abs(Math.Pow(sides[0], 2) + Math.Pow(sides[1], 2) - Math.Pow(sides[2], 2)) < 1e-10;
         }
     }
